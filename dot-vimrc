@@ -1,0 +1,38 @@
+
+fu! SyntaxBlock(open, close, type)
+    let open  = a:open.'\s\+syntax:'.a:type
+    " let open  = '<'.a:type.'>'
+    let close = '\s*'.a:close
+    " let close = '</'.a:type.'>'
+    call SyntaxRange#Include(open, close, a:type, 'Comment')
+endf
+
+fu! AddSyntaxBlocks(open, close, syntaces)
+    for s in a:syntaces
+        call SyntaxBlock(a:open, a:close, s)
+    endfor
+endf
+
+fu! FixNewlines(text)
+    return substitute(a:text , "\n" , "\x0d" , 'g')
+endf
+
+fu! Copy_to_Tmux(text)
+  let text = FixNewlines(a:text)
+  call system("tmux set-buffer '" . substitute(text, "'", "'\\\\''", 'g') . "'" )
+endf
+
+fu! AddQuasiAntiQuotes(type,quasis,antis)
+  " syntax hilighting for QuasiQuoter notation, i.e. [foo| ... |]
+  hi def link Quoter SpecialComment
+  " syntax hilighting for AntiQuoter notation, i.e. ... $x ... $exp:bar ... $stm:( dolla + bill) ...
+  hi AntiQuoter cterm=underline ctermfg=Magenta
+
+  call QuasiAntiQuotes('HaskellQuote','Quoter','AntiQuoter',a:type,a:quasis,a:antis)
+endf
+
+" add regional syntax for haskell comment blocks of form '{- syntax:___ ... -}'
+au FileType haskell call AddSyntaxBlocks('{-', '-}', [ 'c', 'mkd', 'javascript' ])
+" add quasi and anti quoter syntax
+au FileType haskell call AddQuasiAntiQuotes('c',g:c_quoters,g:c_antiquoters)
+
